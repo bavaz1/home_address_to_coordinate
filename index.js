@@ -1,0 +1,44 @@
+let fs = require('fs');
+let parse = require('csv-parse');
+let geocoder = require('geocoder');
+let config = require('./config/google');
+
+let csvData = [];
+let pathToRead; // copy the path of the readable csv.    eg.: let pathToRead = 'datas/cimek_csv.csv';
+let pathToWrite = './datas/coordinates.txt';
+let googleGeoCodingApiKey = config.geoCodingApiKey; // copy your GeoCoding API key to the config directory, google.json file, value of geoCodingApiKey
+
+fs.createReadStream(pathToRead)
+  .pipe(parse({delimiter: ';'}))
+  .on('data', (csvrow) => {
+    let address = {
+      id: csvrow[0],
+      city: csvrow[1],
+      natureName: csvrow[2],
+      nature: csvrow[3],
+      number: csvrow[4],
+      rating: csvrow[5]
+    };
+    csvData.push(address);
+  })
+  .on('end', () => {
+    var wstream = fs.createWriteStream(pathToWrite);
+    csvData.forEach((rowData) => {
+      let address = rowData.city + ', ' + rowData.natureName + ' ' + rowData.nature + ' ' + rowData.number;
+      let latAndLng = {};
+      latAndLng.id = rowData.id;
+      geocoder.geocode(address, (err, data) => {
+        if (err) {
+          console.log(err);
+        }
+        latAndLng.lat = data.results[0].geometry.location.lat;
+        latAndLng.lng = data.results[0].geometry.location.lng;
+        let writeableData = JSON.stringify(latAndLng);
+        wstream.write(writeableData);
+        wstream.write('\n');
+      }, {key: googleGeoCodingApiKey});
+    });
+    wstream.on('finish', () => {
+      console.log('File has been written.');
+    });
+  });
