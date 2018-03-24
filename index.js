@@ -4,7 +4,7 @@ let geocoder = require('geocoder');
 let config = require('./config/google');
 
 let csvData = [];
-let pathToRead; // copy the path of the readable csv.    eg.: let pathToRead = 'datas/cimek_csv.csv';
+let pathToRead = './datas/cimek_csv3.csv'; // copy the path of the readable csv.    eg.: let pathToRead = 'datas/cimek_csv.csv';
 let pathToWrite = './datas/coordinates.txt';
 let googleGeoCodingApiKey = config.geoCodingApiKey; // copy your GeoCoding API key to the config directory, google.json file, value of geoCodingApiKey
 
@@ -22,12 +22,15 @@ fs.createReadStream(pathToRead)
     csvData.push(address);
   })
   .on('end', () => {
+    csvData.splice(0, 1);
     var wstream = fs.createWriteStream(pathToWrite);
     csvData.forEach((rowData) => {
+      console.log(rowData);
       let address = rowData.city + ', ' + rowData.natureName + ' ' + rowData.nature + ' ' + rowData.number;
       let latAndLng = {};
       latAndLng.id = rowData.id;
       geocoder.geocode(address, (err, data) => {
+        console.log(data);
         if (err) {
           console.log(err);
         }
