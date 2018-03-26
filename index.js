@@ -7,6 +7,7 @@ let csvData = [];
 let pathToRead = './datas/cimek_csv3.csv'; // copy the path of the readable csv.    eg.: let pathToRead = 'datas/cimek_csv.csv';
 let pathToWrite = './datas/coordinates.txt';
 let googleGeoCodingApiKey = config.geoCodingApiKey; // copy your GeoCoding API key to the config directory, google.json file, value of geoCodingApiKey
+let addressCounter = 0;
 
 fs.createReadStream(pathToRead)
   .pipe(parse({delimiter: ';'}))
@@ -30,18 +31,30 @@ fs.createReadStream(pathToRead)
       let latAndLng = {};
       latAndLng.id = rowData.id;
       geocoder.geocode(address, (err, data) => {
+        timeout(2);
         console.log(data);
         if (err) {
           console.log(err);
+          timeout(40);
+        } else if (data.status == 'OK') {
+          latAndLng.lat = data.results[0].geometry.location.lat;
+          latAndLng.lng = data.results[0].geometry.location.lng;
+          let writeableData = JSON.stringify(latAndLng);
+          wstream.write(writeableData);
+          wstream.write('\n');
         }
-        latAndLng.lat = data.results[0].geometry.location.lat;
-        latAndLng.lng = data.results[0].geometry.location.lng;
-        let writeableData = JSON.stringify(latAndLng);
-        wstream.write(writeableData);
-        wstream.write('\n');
       }, {key: googleGeoCodingApiKey});
     });
     wstream.on('finish', () => {
       console.log('File has been written.');
     });
   });
+
+function timeout (addToCounter) {
+  addressCounter += addToCounter;
+  if (addressCounter > 40) {
+    addressCounter = 0;
+    var waitTill = new Date(new Date().getTime() + 2000); // 1000 is 1 sec
+    while (waitTill > new Date()) {}
+  }
+}
